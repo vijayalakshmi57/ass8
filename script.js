@@ -1,205 +1,68 @@
-let quizData = {};
-let currentQuestionIndex = 0;
-let score = 0;
-let timer;
-const timeLimit = 30;
-let timeRemaining = timeLimit;
-let selectedCategory = 'science';
-let selectedDifficulty = 'easy';
-let userAnswers = [];
-let incorrectAnswers = [];
+document.getElementById('new_row').style.display = 'none';
+document.getElementById('save_button1').style.display = 'none';
 
-// DOM Elements
-const quizContainer = document.getElementById('quiz');
-const nextBtn = document.getElementById('next-btn');
-const scoreContainer = document.getElementById('score');
-const progressBar = document.getElementById('progress-bar');
-const timerContainer = document.getElementById('timer');
-const categorySelect = document.getElementById('category-select');
-const difficultySelect = document.getElementById('difficulty-select');
+var editData = (n) => {
+    var phone = document.getElementById('phone_row' + n);
+    var email = document.getElementById('email_row' + n);
+    var name = document.getElementById('name_row' + n);
+    var subject = document.getElementById('subject_row' + n);
 
-// Fetch quiz data and initialize quiz
-fetch('quizzData.json')
-  .then(response => response.json())
-  .then(data => {
-    quizData = data;
-    initializeQuiz();
-  })
-  .catch(error => console.error('Error loading quiz data:', error));
+    var phone_data = phone.innerHTML;
+    var email_data = email.innerHTML;
+    var name_data = name.innerHTML;
+    var subject_data = subject.innerHTML;
 
-// Event listener for next button
-nextBtn.addEventListener('click', nextQuestion);
+    phone.innerHTML = '<input type="tel" id="phone_text' + n + '" value="' + phone_data + '">';
+    email.innerHTML = '<input type="email" id="email_text' + n + '" value="' + email_data + '">';
+    name.innerHTML = '<input type="text" id="name_text' + n + '" value="' + name_data + '">';
+    subject.innerHTML = '<input type="text" id="subject_text' + n + '" value="' + subject_data + '">';
 
-// Shuffle questions and limit to 10
-function shuffleQuestions() {
-  const questions = quizData[selectedCategory][selectedDifficulty];
-  for (let i = questions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [questions[i], questions[j]] = [questions[j], questions[i]];
-  }
-  return questions.slice(0, 10);
+    document.getElementById('edit_button' + n).style.display = 'none';
+    document.getElementById('save_button' + n).style.display = 'block';
 }
 
-// Update progress bar
-function updateProgressBar() {
-  const progress = ((currentQuestionIndex + 1) / quizData[selectedCategory][selectedDifficulty].length) * 100;
-  progressBar.style.width = `${progress}%`;
+var saveData = (n) => {
+    var phone_val = document.getElementById('phone_text' + n).value;
+    var email_val = document.getElementById('email_text' + n).value;
+    var name_val = document.getElementById('name_text' + n).value;
+    var subject_val = document.getElementById('subject_text' + n).value;
+
+    document.getElementById('phone_row' + n).innerHTML = phone_val;
+    document.getElementById('email_row' + n).innerHTML = email_val;
+    document.getElementById('name_row' + n).innerHTML =  name_val;
+    document.getElementById('subject_row' + n).innerHTML = subject_val;
+
+    document.getElementById('edit_button' + n).style.display = 'block';
+    document.getElementById('save_button' + n).style.display = 'none';
 }
 
-// Start timer for each question
-function startTimer() {
-  timeRemaining = timeLimit;
-  timerContainer.innerText = `Time: ${timeRemaining}s`;
-  clearInterval(timer);
+var deleteData = (n) => {
+    document.getElementById('row' + n).outerHTML = '';
+}
 
-  timer = setInterval(() => {
-    timeRemaining--;
-    timerContainer.innerText = `Time: ${timeRemaining}s`;
+var addData = () => {
+    var new_phone = document.getElementById('new_phone').value;
+    var new_email = document.getElementById('new_email').value;
+    var new_name = document.getElementById('new_name').value;
+    var new_subject = document.getElementById('new_subject').value;
 
-    if (timeRemaining <= 0) {
-      clearInterval(timer);
-      nextQuestion();
+    if (!new_phone || !new_email || !new_name || !new_subject) {
+        alert('Please enter all the fields.');
     }
-  }, 1000);
-}
+    else {
+        var table = document.getElementById('table');
+        var table_len = (table.rows.length) - 1;
+        table.insertRow(table_len).outerHTML = "<tr id='row"+table_len+"'><td id='phone_row"+table_len+"'>"+new_phone+"</td><td id='email_row"+table_len+"'>"+new_email+"</td><td id='name_row"+table_len+"'>"+new_name+"</td><td id='subject_row"+table_len+"'>"+new_subject+"</td><td id='manage_row"+table_len+"'><button id='edit_button"+table_len+"' onclick='editData("+table_len+")'>Edit</button> <button style='display:none' id='save_button"+table_len+"'onclick='saveData("+table_len+")'>Save</button> <button id='delete' onclick='deleteData("+table_len+")'>Delete</button></td></tr>";
 
-// Stop the timer when an answer is selected
-function stopTimer() {
-  clearInterval(timer);
-}
+        document.getElementById('new_phone').value='';
+        document.getElementById('new_email').value='';
+        document.getElementById('new_name').value='';
+        document.getElementById('new_subject').value='';
 
-// Handle answer selection
-function selectAnswer(selectedOption) {
-  stopTimer();
-  const currentQuestion = quizData[selectedCategory][selectedDifficulty][currentQuestionIndex];
-  const buttons = document.querySelectorAll('.option-btn');
-
-  buttons.forEach(button => {
-    button.disabled = true;
-    if (button.innerText === currentQuestion.answer) {
-      button.classList.add('correct');
-    } else if (button.innerText === selectedOption) {
-      button.classList.add('incorrect');
+        document.getElementById('new_row').style.display = 'none';
     }
-  });
-
-  if (selectedOption === currentQuestion.answer) {
-    score++;
-    scoreContainer.innerText = `Score: ${score}`;
-  } else {
-    incorrectAnswers.push(currentQuestion);
-  }
-
-  nextBtn.disabled = false;
 }
 
-// Load the current question
-function loadQuestion() {
-  const currentQuestion = quizData[selectedCategory][selectedDifficulty][currentQuestionIndex];
-
-  if (!currentQuestion) {
-    showResults();
-    return;
-  }
-
-  quizContainer.innerHTML = `
-    <h2>${currentQuestion.question}</h2>
-    <div class="options">
-      ${currentQuestion.options.map(option =>
-        `<button class="option-btn" onclick="selectAnswer('${option}')">${option}</button>`
-      ).join('')}
-    </div>
-  `;
-
-  updateProgressBar();
-  startTimer();
-  nextBtn.disabled = true;
+var addRow = () => {
+    document.getElementById('new_row').style.display = 'table-row';
 }
-
-// Move to the next question
-function nextQuestion() {
-  currentQuestionIndex++;
-
-  if (currentQuestionIndex < quizData[selectedCategory][selectedDifficulty].length) {
-    loadQuestion();
-  } else {
-    showResults();
-  }
-}
-
-// Show results and restart options
-function showResults() {
-  saveHighScore(score);
-  quizContainer.innerHTML = `
-    <h2>Your Score: ${score}/${quizData[selectedCategory][selectedDifficulty].length}</h2>
-    <button onclick="restartQuiz()">Restart Quiz</button>
-    <button onclick="showIncorrectAnswers()">Review Incorrect Answers</button>
-  `;
-  stopTimer();
-}
-
-// Display incorrect answers
-function showIncorrectAnswers() {
-  const reviewHtml = incorrectAnswers.map((question) => `
-    <p>${question.question} - Correct Answer: ${question.answer}</p>
-  `).join('');
-
-  quizContainer.innerHTML = `
-    <h2>Incorrect Answers</h2>
-    ${reviewHtml}
-    <button onclick="restartQuiz()">Restart Quiz</button>
-  `;
-}
-
-// Restart the quiz
-function restartQuiz() {
-  score = 0;
-  currentQuestionIndex = 0;
-  userAnswers = [];
-  incorrectAnswers = [];
-  loadQuestion();
-  scoreContainer.innerText = `Score: 0`;
-  nextBtn.disabled = true;
-  progressBar.style.width = '0%';
-  displayHighScores();
-}
-
-// Save high scores to localStorage
-function saveHighScore(newScore) {
-  let highScores = JSON.parse(localStorage.getItem('highScores')) || [];
-  highScores.push(newScore);
-  highScores.sort((a, b) => b - a);
-  highScores = highScores.slice(0, 5);
-  localStorage.setItem('highScores', JSON.stringify(highScores));
-  displayHighScores();
-}
-
-// Display high scores
-function displayHighScores() {
-  const highScores = JSON.parse(localStorage.getItem('highScores')) || [];
-  const highScoresContainer = document.getElementById('high-scores');
-  highScoresContainer.innerHTML = `
-    <h2>High Scores</h2>
-    <ul>
-      ${highScores.map(score => `<li>${score}</li>`).join('')}
-    </ul>
-  `;
-}
-
-// Initialize the quiz based on selected category and difficulty
-function initializeQuiz() {
-  selectedCategory = categorySelect.value;
-  selectedDifficulty = difficultySelect.value;
-  currentQuestionIndex = 0;
-  score = 0;
-  incorrectAnswers = [];
-  quizData[selectedCategory][selectedDifficulty] = shuffleQuestions();
-  loadQuestion();
-}
-
-// Event listeners for category and difficulty changes
-categorySelect.addEventListener('change', initializeQuiz);
-difficultySelect.addEventListener('change', initializeQuiz);
-
-// Display high scores on page load
-displayHighScores();
